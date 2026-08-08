@@ -259,6 +259,40 @@ def get_session(
     return login(profile_dir=profile_dir, assume_logged_out=True)
 
 
+def session_from_token(token: str, session_file: Path = DEFAULT_SESSION_FILE) -> Session:
+    """Create (and save) a Session from a bearer token alone.
+
+    The DeepSeek backend authenticates purely via the `Authorization: Bearer`
+    header — cookies are not required (verified 2026-08). So the easiest login
+    is: sign in at chat.deepseek.com in any browser, copy the token from
+    localStorage, then run:
+
+        python -m deepseek.auth --token <TOKEN>
+
+    Returns the saved Session.
+    """
+    token = token.strip()
+    if not token:
+        raise ValueError("Empty token.")
+    session = Session(token=token, cookies={}, user_agent="", captured_at=time.time())
+    session.save(session_file)
+    return session
+
+
 if __name__ == "__main__":
-    s = login()
-    print(f"[auth] captured token {s.token[:10]}... ({len(s.cookies)} cookies)")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="DeepSeek session setup")
+    parser.add_argument(
+        "--token",
+        help="Bearer token from chat.deepseek.com localStorage.userToken.value "
+             "(easiest login — no browser automation needed).",
+    )
+    args = parser.parse_args()
+
+    if args.token:
+        s = session_from_token(args.token)
+        print(f"[auth] saved token-only session: {s.token[:10]}...")
+    else:
+        s = login()
+        print(f"[auth] captured token {s.token[:10]}... ({len(s.cookies)} cookies)")

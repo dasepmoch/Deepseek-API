@@ -47,15 +47,30 @@ cd Deepseek-API
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
-# Install the browser Playwright needs (one-time)
-playwright install chromium
-
-# Sign in once: a browser opens, log in with your DeepSeek account
-python -m deepseek.auth
 ```
 
-Your session (token + cookies) is saved under `session/` and reused automatically. Token refresh is also automatic — you won't need to sign in repeatedly.
+### Login — pick one
+
+**Option A (easiest): copy-paste the token.** No browser automation, no Playwright.
+
+1. Sign in at [chat.deepseek.com](https://chat.deepseek.com) in any browser you already use.
+2. Open DevTools (F12) → Console, and run:
+   ```js
+   JSON.parse(localStorage.userToken).value
+   ```
+3. Copy the result and paste it into:
+   ```bash
+   python -m deepseek.auth --token PASTE_TOKEN_HERE
+   ```
+
+**Option B (browser automation): one-time Playwright login.**
+
+```bash
+playwright install chromium
+python -m deepseek.auth   # opens a browser once, sign in, human-check cleared
+```
+
+Your session is saved under `session/session.json` and reused automatically.
 
 ---
 
