@@ -2,6 +2,9 @@
 
 **Turn your free DeepSeek account into an OpenAI-compatible API.** No API key, no billing, no credit card — just your existing chat.deepseek.com login, exposed as a standard `/v1` endpoint you can use from code, agents, or any OpenAI-compatible tool.
 
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 ```
 ┌──────────────┐   OpenAI format   ┌─────────────────┐   DeepSeek internal   ┌────────────────┐
 │ OpenAI SDK   │ ◄───────────────► │  bridge (:8090) │ ────────────────────► │ chat.deepseek  │
