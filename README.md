@@ -1,6 +1,6 @@
 # DeepSeek API Bridge
 
-**Ubah akun DeepSeek gratismu jadi OpenAI-compatible API.** Tanpa API key, tanpa biaya, tanpa kartu kredit — cukup pakai sesi login chat.deepseek.com yang sudah kamu punya, dan dapatkan endpoint API yang bisa dipakai dari kode, agent, atau tools apa pun.
+**Turn your free DeepSeek account into an OpenAI-compatible API.** No API key, no billing, no credit card — just your existing chat.deepseek.com login, exposed as a standard `/v1` endpoint you can use from code, agents, or any OpenAI-compatible tool.
 
 ```
 ┌──────────────┐   OpenAI format   ┌─────────────────┐   DeepSeek internal   ┌────────────────┐
@@ -10,15 +10,15 @@
 └──────────────┘
 ```
 
-Built with a single goal: **make a free DeepSeek account behave like a real API** — including tool calling, streaming, DeepThink reasoning, and usage metadata.
+Built around one idea: **make a free DeepSeek account behave like a real API** — including tool calling, streaming, DeepThink reasoning, and usage metadata.
 
 ---
 
-## ✨ Fitur
+## ✨ Features
 
-- **OpenAI-compatible** — speak the standard `/v1/chat/completions` protocol, drop-in for the OpenAI SDK.
+- **OpenAI-compatible** — speaks the standard `/v1/chat/completions` protocol; drop-in for the OpenAI SDK.
 - **Tool calling (agent-ready)** — `tools` in, native `tool_calls` out. Works with OpenCode, Hermes, and any OpenAI-compatible agent.
-- **Streaming** — proper SSE deltas incl. tool-call chunks and final `usage`.
+- **Streaming** — proper SSE deltas, including tool-call chunks and final `usage`.
 - **DeepThink (reasoning)** — `thinking: true` returns `reasoning_content` + `reasoning_tokens`, exactly like the official API.
 - **Web search** — `search: true` toggle per request.
 - **Multi-turn** — resume threads with `conversation_id`.
@@ -30,12 +30,12 @@ Built with a single goal: **make a free DeepSeek account behave like a real API*
 ## Requirements
 
 - Python 3.9+
-- Akun DeepSeek (gratis) — [chat.deepseek.com](https://chat.deepseek.com)
+- A DeepSeek account (free) — [chat.deepseek.com](https://chat.deepseek.com)
 - Linux / macOS / Windows
 
 ---
 
-## Setup (2 menit)
+## Setup (2 minutes)
 
 ```bash
 git clone https://github.com/dasepmoch/Deepseek-API.git
@@ -45,46 +45,46 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Install browser untuk login (sekali saja)
+# Install the browser Playwright needs (one-time)
 playwright install chromium
 
-# Login sekali: browser terbuka, masuk dengan akun DeepSeek-mu
+# Sign in once: a browser opens, log in with your DeepSeek account
 python -m deepseek.auth
 ```
 
-Sesi login (token + cookies) tersimpan di `session/` dan dipakai ulang otomatis. Refresh token juga otomatis — kamu tidak perlu login berulang.
+Your session (token + cookies) is saved under `session/` and reused automatically. Token refresh is also automatic — you won't need to sign in repeatedly.
 
 ---
 
-## Jalankan server
+## Run the server
 
 ```bash
 python app.py
-# → OpenAI-compatible API di http://127.0.0.1:8090
+# → OpenAI-compatible API at http://127.0.0.1:8090
 ```
 
-Ubah port/host dengan env: `HOST=0.0.0.0 PORT=8080 python app.py`
+Change the address with env vars: `HOST=0.0.0.0 PORT=8080 python app.py`
 
 ### Endpoints
 
-| Method | Path | Deskripsi |
+| Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/v1/chat/completions` | Chat — dukung `stream`, `tools`, `thinking`, `search`, `conversation_id` |
-| `GET`  | `/v1/models` | Daftar model |
+| `POST` | `/v1/chat/completions` | Chat — supports `stream`, `tools`, `thinking`, `search`, `conversation_id` |
+| `GET`  | `/v1/models` | List models |
 | `GET`  | `/healthz` | Health check |
 
-### Model
+### Models
 
-| Model | Mode | Catatan |
+| Model | Mode | Notes |
 | --- | --- | --- |
-| `deepseek-chat` | Instant | Model cepat, default |
-| `deepseek-expert` | Expert | Lebih kuat, lebih lambat |
+| `deepseek-v4-flash` | Instant | Fast model, default |
+| `deepseek-v4-pro` | Expert | Stronger, slower |
 
 ---
 
-## Contoh pakai
+## Usage examples
 
-### Chat biasa
+### Chat
 
 ```python
 from openai import OpenAI
@@ -92,13 +92,13 @@ from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8090/v1", api_key="unused")
 
 resp = client.chat.completions.create(
-    model="deepseek-chat",
-    messages=[{"role": "user", "content": "Halo!"}],
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "Hello!"}],
 )
 print(resp.choices[0].message.content)
 ```
 
-### Tool calling (agent)
+### Tool calling (agents)
 
 ```python
 from openai import OpenAI
@@ -106,7 +106,7 @@ from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8090/v1", api_key="unused")
 
 resp = client.chat.completions.create(
-    model="deepseek-chat",
+    model="deepseek-v4-flash",
     messages=[{"role": "user", "content": "List the files in /tmp"}],
     tools=[{
         "type": "function",
@@ -124,27 +124,27 @@ resp = client.chat.completions.create(
 print(resp.choices[0].message.tool_calls)  # native tool_calls
 ```
 
-Tool calling di-emulasi di sisi server: deskripsi tool di-render ke prompt, output model di-parse, lalu dibungkus ulang jadi `tool_calls` native OpenAI. Karena protokolnya standar, ini bekerja dengan **OpenCode**, **Hermes**, dan agent OpenAI-compatible lain.
+Tool calling is emulated server-side: tool definitions are rendered into the prompt, the model's output is parsed, then re-wrapped as native OpenAI `tool_calls`. Because the protocol is standard, this works with **OpenCode**, **Hermes**, and other OpenAI-compatible agents.
 
 ### DeepThink (reasoning)
 
 ```python
 resp = client.chat.completions.create(
-    model="deepseek-chat",
+    model="deepseek-v4-flash",
     messages=[{"role": "user", "content": "Solve step by step: 17*23"}],
     extra_body={"thinking": True},
 )
-print(resp.choices[0].message.content)           # jawaban akhir
+print(resp.choices[0].message.content)            # final answer
 print(resp.choices[0].message.reasoning_content)  # chain-of-thought
-print(resp.usage.completion_tokens_details.reasoning_tokens)  # token reasoning
+print(resp.usage.completion_tokens_details.reasoning_tokens)  # reasoning tokens
 ```
 
 ### Streaming
 
 ```python
 stream = client.chat.completions.create(
-    model="deepseek-chat",
-    messages=[{"role": "user", "content": "Tulis puisi pendek"}],
+    model="deepseek-v4-flash",
+    messages=[{"role": "user", "content": "Write a short poem"}],
     stream=True,
 )
 for chunk in stream:
@@ -155,7 +155,7 @@ for chunk in stream:
 
 ## Auto-start (systemd)
 
-Server bisa jalan terus sebagai service dan restart otomatis saat boot:
+Run the server as a service that restarts automatically on boot:
 
 ```ini
 # ~/.config/systemd/user/deepseek-bridge.service
@@ -179,33 +179,33 @@ WantedBy=default.target
 systemctl --user enable --now deepseek-bridge.service
 ```
 
-Refresh session berkala (biar token selalu fresh) bisa lewat timer systemd yang menjalankan `scripts/refresh_session.py`.
+For periodic session refresh (keeps the token fresh), a systemd timer can run `scripts/refresh_session.py`.
 
 ---
 
-## Struktur proyek
+## Project layout
 
-| Path | Fungsi |
+| Path | Purpose |
 | --- | --- |
-| `deepseek/` | Library inti: auth/login browser, HTTP client, PoW solver |
+| `deepseek/` | Core library: browser auth/login, HTTP client, PoW solver |
 | `server/` | FastAPI OpenAI-compatible server |
-| `scripts/` | Util (refresh session) |
-| `examples/` | Contoh pemakaian |
-| `app.py` | Entry point server |
+| `scripts/` | Utilities (session refresh) |
+| `examples/` | Runnable examples |
+| `app.py` | Server entry point |
 
 ---
 
-## Keterbatasan (jujur)
+## Honest limitations
 
-- **Ini bukan API resmi DeepSeek.** Proyek ini menjembatani chat web DeepSeek untuk penggunaan pribadi/wajar. Pakai sesuai ketentuan DeepSeek.
-- **Tool calling di-emulasi** — model web adalah model chat, jadi kualitas tool call best-effort. Parser toleran ke beberapa format output supaya agent loop tetap jalan.
-- **Token usage adalah estimasi** — dihitung ulang dengan tokenizer BPE (`tiktoken`), bukan angka resmi dari backend. Akurat sampai ±1 token.
-- **Rate limit** 30 req/menit per IP bawaan (ubah dengan `RATE_LIMIT_PER_MINUTE`).
-- **Request serial** — solver PoW tidak reentrant, jadi request diproses satu-satu.
-- Vision belum didukung.
+- **Not the official DeepSeek API.** This project bridges DeepSeek's web chat for personal, reasonable use. Please respect DeepSeek's terms of service.
+- **Tool calling is emulated** — the web model is a chat model, so tool-call quality is best-effort. The parser tolerates several output formats to keep agent loops reliable.
+- **Token usage is an estimate** — re-counted with a BPE tokenizer (`tiktoken`), not official backend numbers. Accurate to within ~1 token.
+- **Rate limit** 30 req/min per IP by default (change with `RATE_LIMIT_PER_MINUTE`).
+- **Serialized requests** — the PoW solver is not reentrant, so requests are processed one at a time.
+- Vision is not supported yet.
 
 ---
 
-## Lisensi
+## License
 
-[MIT](LICENSE) © 2026 Dasep M Luay
+[MIT](LICENSE) © 2026 dasepmoch
